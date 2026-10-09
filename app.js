@@ -197,13 +197,13 @@ function card(a) {
   el.innerHTML = `
     ${a.image ? `<img src="${escapeHtml(a.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ''}
     <div class="body">
-      ${meta ? `<div class="meta">${meta}</div>` : ''}
-      <div class="title-row">
-        <h3>${a.url ? `<a class="card-link" href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}</h3>
+      ${meta || a.hash ? `<div class="top-row">
+        <div class="meta">${meta}</div>
         ${a.hash ? `<button type="button" class="mark-read" ${a.read
           ? 'disabled aria-pressed="true" aria-label="Read" title="Read"'
           : 'aria-pressed="false" aria-label="Mark as read" title="Mark as read"'}>${CHECK_ICON}</button>` : ''}
-      </div>
+      </div>` : ''}
+      <h3>${a.url ? `<a class="card-link" href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}</h3>
       ${a.description ? `<p>${escapeHtml(a.description)}</p>` : ''}
     </div>`;
   const img = el.querySelector('img');
