@@ -214,7 +214,11 @@ async function markRead(a, el) {
   const updated = card(a);
   el.replaceWith(updated);
   try {
-    const res = await fetch(`${MARK_READ_URL}?hash=${encodeURIComponent(a.hash)}`);
+    const res = await fetch(MARK_READ_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hash: a.hash }),
+    });
     if (!res.ok) throw new Error(`Request failed (${res.status})`);
   } catch (err) {
     a.read = false;
