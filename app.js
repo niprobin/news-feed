@@ -4,6 +4,7 @@ const state = {
   articles: [],
   range: localGet('range') || '3months',
   view: localGet('view') || 'grid',
+  source: localGet('source') || '',
 };
 
 const $status = document.getElementById('status');
@@ -46,7 +47,7 @@ function normalize(raw) {
   if (source && typeof source === 'object') source = source.name || source.title || null;
   const url = pick(raw, ['url', 'link', 'href', 'guid']);
   if (!source && url) source = SOURCE_NAMES[hostname(url)] ?? hostname(url);
-  const { summary, category, tags } = parsePreview(stripHtml(pick(raw, ['preview', 'description', 'summary', 'contentSnippet', 'snippet', 'excerpt', 'content']) || ''));
+  const { summary, category } = parsePreview(stripHtml(pick(raw, ['preview', 'description', 'summary', 'contentSnippet', 'snippet', 'excerpt', 'content']) || ''));
 
   return {
     title: String(pick(raw, ['title', 'headline', 'name']) ?? 'Untitled'),
@@ -54,7 +55,6 @@ function normalize(raw) {
     url,
     description: summary,
     category,
-    tags,
     image,
     source,
     date: date && !isNaN(date) ? date : null,
@@ -77,7 +77,7 @@ function parsePreview(text) {
   let summary = lines.join(' ');
   // Some feeds also inline a (truncated) copy of the tags: "Summary. / Tag1, Ta (…)".
   if (tags.length) summary = summary.replace(/\s+\/\s+[^/]*$/, '');
-  return { summary, category, tags };
+  return { summary, category };
 }
 
 const SOURCE_NAMES = {
@@ -120,6 +120,7 @@ async function load() {
       throw new Error(`No articles found in the response.${msg}`);
     }
     state.articles = dedupe(items.map(normalize)).sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
+    fillSourceOptions();
     render();
   } catch (err) {
     setStatus(err.message, true);
@@ -159,7 +160,9 @@ const dayFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'shor
 function render() {
   syncButtons();
   const start = rangeStart(state.range);
-  const visible = state.articles.filter((a) => a.date && a.date >= start);
+  const visible = state.articles.filter(
+    (a) => a.date && a.date >= start && (!state.source || a.source === state.source),
+  );
 
   $content.innerHTML = '';
   if (!visible.length) {
@@ -196,11 +199,19 @@ function card(a) {
       ${meta ? `<div class="meta">${meta}</div>` : ''}
       <h3>${escapeHtml(a.title)}</h3>
       ${a.description ? `<p>${escapeHtml(a.description)}</p>` : ''}
-      ${a.tags.length ? `<ul class="tags">${a.tags.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
     </div>`;
   const img = el.querySelector('img');
   if (img) img.addEventListener('error', () => img.remove());
   return el;
+}
+
+// Options come from the loaded articles, so new feeds show up automatically.
+function fillSourceOptions() {
+  const $source = document.getElementById('source');
+  const sources = [...new Set(state.articles.map((a) => a.source).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  if (state.source && !sources.includes(state.source)) state.source = '';
+  $source.replaceChildren(new Option('All sources', ''), ...sources.map((s) => new Option(s, s)));
+  $source.value = state.source;
 }
 
 function syncButtons() {
@@ -238,6 +249,11 @@ document.getElementById('view').addEventListener('click', (e) => {
   if (!v) return;
   state.view = v;
   localSet('view', v);
+  render();
+});
+document.getElementById('source').addEventListener('change', (e) => {
+  state.source = e.target.value;
+  localSet('source', state.source);
   render();
 });
 document.getElementById('refresh').addEventListener('click', load);

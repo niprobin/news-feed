@@ -53,7 +53,12 @@ body {
 .segmented button:hover, .icon-btn:hover { color: var(--text); }
 .segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 .icon-btn { border: 1px solid var(--border); background: var(--surface); font-size: 1rem; padding: 5px 11px; }
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.select {
+  font: inherit; font-size: 0.875rem; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+  padding: 7px 12px; cursor: pointer;
+}
+button:focus-visible, .select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 main { max-width: 1200px; margin: 0 auto; padding: 16px; }
 .status { color: var(--muted); margin: 8px 0 16px; }
@@ -68,7 +73,9 @@ main { max-width: 1200px; margin: 0 auto; padding: 16px; }
 }
 .month h2 .count { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
 
-.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
 .list { display: flex; flex-direction: column; gap: 10px; }
 
 .card {
@@ -96,8 +103,3 @@ main { max-width: 1200px; margin: 0 auto; padding: 16px; }
   .segmented button { padding: 6px 10px; }
 }
 
-.tags { list-style: none; margin: auto 0 0; padding: 4px 0 0; display: flex; flex-wrap: wrap; gap: 4px; }
-.tags li {
-  font-size: 0.72rem; color: var(--muted);
-  border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px;
-}
