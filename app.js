@@ -187,6 +187,8 @@ function render() {
   }
 }
 
+const CHECK_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 function card(a) {
   const el = document.createElement('article');
   el.className = `card${a.read ? ' is-read' : ''}`;
@@ -196,15 +198,17 @@ function card(a) {
     ${a.image ? `<img src="${escapeHtml(a.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ''}
     <div class="body">
       ${meta ? `<div class="meta">${meta}</div>` : ''}
-      <h3>${a.url ? `<a class="card-link" href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}</h3>
+      <div class="title-row">
+        <h3>${a.url ? `<a class="card-link" href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}</h3>
+        ${a.hash ? `<button type="button" class="mark-read" ${a.read
+          ? 'disabled aria-pressed="true" aria-label="Read" title="Read"'
+          : 'aria-pressed="false" aria-label="Mark as read" title="Mark as read"'}>${CHECK_ICON}</button>` : ''}
+      </div>
       ${a.description ? `<p>${escapeHtml(a.description)}</p>` : ''}
-      ${a.hash ? `<div class="actions">${a.read
-        ? '<span class="read-label">✓ Read</span>'
-        : '<button type="button" class="mark-read">Mark as read</button>'}</div>` : ''}
     </div>`;
   const img = el.querySelector('img');
   if (img) img.addEventListener('error', () => img.remove());
-  el.querySelector('.mark-read')?.addEventListener('click', () => markRead(a, el));
+  if (!a.read) el.querySelector('.mark-read')?.addEventListener('click', () => markRead(a, el));
   return el;
 }
 
