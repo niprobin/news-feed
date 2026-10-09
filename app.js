@@ -37,28 +37,58 @@ function pick(o, keys) {
 }
 
 function normalize(raw) {
-  const dateRaw = pick(raw, ['date', 'pubDate', 'publishedAt', 'published_at', 'published', 'isoDate', 'created_at', 'createdAt']);
+  const dateRaw = pick(raw, ['published_date', 'date', 'pubDate', 'publishedAt', 'published_at', 'published', 'isoDate', 'created_at', 'createdAt']);
   const date = dateRaw ? new Date(dateRaw) : null;
   let image = pick(raw, ['image', 'imageUrl', 'image_url', 'urlToImage', 'thumbnail', 'cover']);
   if (image && typeof image === 'object') image = image.url || image.src || null;
   if (!image && raw.enclosure) image = raw.enclosure.url || null;
   let source = pick(raw, ['source', 'feed', 'publisher', 'site', 'creator', 'author']);
   if (source && typeof source === 'object') source = source.name || source.title || null;
+  const url = pick(raw, ['url', 'link', 'href', 'guid']);
+  if (!source && url) source = hostname(url);
+  const { summary, category, tags } = parsePreview(stripHtml(pick(raw, ['preview', 'description', 'summary', 'contentSnippet', 'snippet', 'excerpt', 'content']) || ''));
 
   return {
     title: String(pick(raw, ['title', 'headline', 'name']) ?? 'Untitled'),
-    url: pick(raw, ['url', 'link', 'href', 'guid']),
-    description: stripHtml(pick(raw, ['description', 'summary', 'contentSnippet', 'snippet', 'excerpt', 'content']) || ''),
+    key: raw.hash ?? raw.id ?? url,
+    url,
+    description: summary,
+    category,
+    tags,
     image,
     source,
     date: date && !isNaN(date) ? date : null,
   };
 }
 
+// Feed previews look like "Summary text\nCategory\n\n/ \nTag1, \nTag2":
+// split off the trailing category and tags.
+function parsePreview(text) {
+  const [body, tagPart] = text.split(/\n\s*\/\s*\n/);
+  const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
+  const category = tagPart !== undefined && lines.length > 1 ? lines.pop() : null;
+  const tags = tagPart ? tagPart.split(',').map((t) => t.trim()).filter(Boolean) : [];
+  return { summary: lines.join(' '), category, tags };
+}
+
+function hostname(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return null; }
+}
+
+// The webhook can return the same article more than once.
+function dedupe(articles) {
+  const seen = new Set();
+  return articles.filter((a) => {
+    if (a.key == null) return true;
+    if (seen.has(a.key)) return false;
+    seen.add(a.key);
+    return true;
+  });
+}
+
 function stripHtml(s) {
-  const el = document.createElement('div');
-  el.innerHTML = String(s);
-  return el.textContent.trim();
+  // DOMParser documents are inert, so markup in feed text can't run scripts.
+  return new DOMParser().parseFromString(String(s), 'text/html').body.textContent.trim();
 }
 
 async function load() {
@@ -73,7 +103,7 @@ async function load() {
       const msg = payload && payload.message ? ` Webhook said: “${payload.message}”.` : '';
       throw new Error(`No articles found in the response.${msg}`);
     }
-    state.articles = items.map(normalize).sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
+    state.articles = dedupe(items.map(normalize)).sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
     render();
   } catch (err) {
     setStatus(err.message, true);
@@ -143,13 +173,14 @@ function card(a) {
     el.target = '_blank';
     el.rel = 'noopener noreferrer';
   }
-  const meta = [a.source, a.date && dayFmt.format(a.date)].filter(Boolean).map(escapeHtml).join(' · ');
+  const meta = [a.category, a.source, a.date && dayFmt.format(a.date)].filter(Boolean).map(escapeHtml).join(' · ');
   el.innerHTML = `
     ${a.image ? `<img src="${escapeHtml(a.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ''}
     <div class="body">
       ${meta ? `<div class="meta">${meta}</div>` : ''}
       <h3>${escapeHtml(a.title)}</h3>
       ${a.description ? `<p>${escapeHtml(a.description)}</p>` : ''}
+      ${a.tags.length ? `<ul class="tags">${a.tags.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
     </div>`;
   const img = el.querySelector('img');
   if (img) img.addEventListener('error', () => img.remove());

@@ -95,3 +95,9 @@ main { max-width: 1200px; margin: 0 auto; padding: 16px; }
   .list .card img { width: 96px; }
   .segmented button { padding: 6px 10px; }
 }
+
+.tags { list-style: none; margin: auto 0 0; padding: 4px 0 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.tags li {
+  font-size: 0.72rem; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px;
+}
