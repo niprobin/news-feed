@@ -45,7 +45,7 @@ function normalize(raw) {
   let source = pick(raw, ['source', 'feed', 'publisher', 'site', 'creator', 'author']);
   if (source && typeof source === 'object') source = source.name || source.title || null;
   const url = pick(raw, ['url', 'link', 'href', 'guid']);
-  if (!source && url) source = hostname(url);
+  if (!source && url) source = SOURCE_NAMES[hostname(url)] ?? hostname(url);
   const { summary, category, tags } = parsePreview(stripHtml(pick(raw, ['preview', 'description', 'summary', 'contentSnippet', 'snippet', 'excerpt', 'content']) || ''));
 
   return {
@@ -61,15 +61,31 @@ function normalize(raw) {
   };
 }
 
-// Feed previews look like "Summary text\nCategory\n\n/ \nTag1, \nTag2":
-// split off the trailing category and tags.
+// Previews come in a few shapes depending on the feed:
+//   basta:       "Summary\nCategory\n\n/ \nTag1, \nTag2"
+//   monde-diplo: "Summary (…)\n / Tag1, Tag2"
+//   WordPress:   "Summary\nL’article X est apparu en premier sur Site."
+// Split off the trailing category and tags, and drop WordPress boilerplate.
 function parsePreview(text) {
-  const [body, tagPart] = text.split(/\n\s*\/\s*\n/);
-  const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
+  const [body, tagPart] = text.split(/\n[ \t]*\/[ \t]*\n?/);
+  const lines = body
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !/^L[’']article .* est apparu en premier sur /.test(l));
   const category = tagPart !== undefined && lines.length > 1 ? lines.pop() : null;
   const tags = tagPart ? tagPart.split(',').map((t) => t.trim()).filter(Boolean) : [];
-  return { summary: lines.join(' '), category, tags };
+  let summary = lines.join(' ');
+  // Some feeds also inline a (truncated) copy of the tags: "Summary. / Tag1, Ta (…)".
+  if (tags.length) summary = summary.replace(/\s+\/\s+[^/]*$/, '');
+  return { summary, category, tags };
 }
+
+const SOURCE_NAMES = {
+  'basta.media': 'Basta!',
+  'legrandcontinent.eu': 'Le Grand Continent',
+  'esprit.presse.fr': 'Esprit',
+  'monde-diplomatique.fr': 'Le Monde diplomatique',
+};
 
 function hostname(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return null; }
