@@ -122,7 +122,9 @@ async function load() {
       const msg = payload && payload.message ? ` Webhook said: “${payload.message}”.` : '';
       throw new Error(`No articles found in the response.${msg}`);
     }
-    state.articles = dedupe(items.map(normalize)).sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
+    // Articles already read are hidden on load; ones marked during this
+    // session stay visible (dimmed) until the next refresh.
+    state.articles = dedupe(items.map(normalize)).filter((a) => !a.read).sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
     fillSourceOptions();
     render();
   } catch (err) {
