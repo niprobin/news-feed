@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>News Feed</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>News</h1>
+    <div class="controls">
+      <div class="segmented" role="group" aria-label="Date range" id="range">
+        <button data-range="week">This week</button>
+        <button data-range="month">This month</button>
+        <button data-range="3months">Last 3 months</button>
+      </div>
+      <div class="segmented" role="group" aria-label="View" id="view">
+        <button data-view="grid">Grid</button>
+        <button data-view="list">List</button>
+      </div>
+      <button id="refresh" class="icon-btn" title="Refresh" aria-label="Refresh">↻</button>
+    </div>
+  </header>
+
+  <main>
+    <p id="status" class="status" role="status"></p>
+    <div id="content"></div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
