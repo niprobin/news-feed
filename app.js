@@ -1,4 +1,5 @@
 const WEBHOOK_URL = 'https://n8n.niprobin.com/webhook/news';
+const MARK_READ_URL = 'https://n8n.niprobin.com/webhook/mark-read';
 
 const state = {
   articles: [],
@@ -52,6 +53,8 @@ function normalize(raw) {
   return {
     title: String(pick(raw, ['title', 'headline', 'name']) ?? 'Untitled'),
     key: raw.hash ?? raw.id ?? url,
+    hash: raw.hash ?? null,
+    read: raw.read === true,
     url,
     description: summary,
     category,
@@ -185,24 +188,39 @@ function render() {
 }
 
 function card(a) {
-  const el = document.createElement(a.url ? 'a' : 'article');
-  el.className = 'card';
-  if (a.url) {
-    el.href = a.url;
-    el.target = '_blank';
-    el.rel = 'noopener noreferrer';
-  }
+  const el = document.createElement('article');
+  el.className = `card${a.read ? ' is-read' : ''}`;
   const meta = [a.category, a.source, a.date && dayFmt.format(a.date)].filter(Boolean).map(escapeHtml).join(' · ');
+  const title = escapeHtml(a.title);
   el.innerHTML = `
     ${a.image ? `<img src="${escapeHtml(a.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : ''}
     <div class="body">
       ${meta ? `<div class="meta">${meta}</div>` : ''}
-      <h3>${escapeHtml(a.title)}</h3>
+      <h3>${a.url ? `<a class="card-link" href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}</h3>
       ${a.description ? `<p>${escapeHtml(a.description)}</p>` : ''}
+      ${a.hash ? `<div class="actions">${a.read
+        ? '<span class="read-label">✓ Read</span>'
+        : '<button type="button" class="mark-read">Mark as read</button>'}</div>` : ''}
     </div>`;
   const img = el.querySelector('img');
   if (img) img.addEventListener('error', () => img.remove());
+  el.querySelector('.mark-read')?.addEventListener('click', () => markRead(a, el));
   return el;
+}
+
+// Optimistically show the article as read, and roll back if the webhook fails.
+async function markRead(a, el) {
+  a.read = true;
+  const updated = card(a);
+  el.replaceWith(updated);
+  try {
+    const res = await fetch(`${MARK_READ_URL}?hash=${encodeURIComponent(a.hash)}`);
+    if (!res.ok) throw new Error(`Request failed (${res.status})`);
+  } catch (err) {
+    a.read = false;
+    updated.replaceWith(card(a));
+    setStatus(`Couldn't mark “${a.title}” as read: ${err.message}`, true);
+  }
 }
 
 // Options come from the loaded articles, so new feeds show up automatically.
