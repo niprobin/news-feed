@@ -2,7 +2,7 @@
 
 A static web app that shows news articles from the n8n webhook `https://n8n.niprobin.com/webhook/news`.
 
-- Date filters: this week, this month, last 3 months
+- Date filters: last 7 days, this month, last 3 months
 - Articles grouped by month
 - Grid view by default, with a list view option
 

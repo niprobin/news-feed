@@ -3,7 +3,7 @@ const MARK_READ_URL = 'https://n8n.niprobin.com/webhook/mark-read';
 
 const state = {
   articles: [],
-  range: localGet('range') || '3months',
+  range: ({ week: '7days' })[localGet('range')] || localGet('range') || '3months',
   view: localGet('view') || 'grid',
   source: localGet('source') || '',
 };
@@ -136,9 +136,8 @@ async function load() {
 
 function rangeStart(range, now = new Date()) {
   const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (range === 'week') {
-    const offset = (d.getDay() + 6) % 7; // Monday = start of week
-    d.setDate(d.getDate() - offset);
+  if (range === '7days') {
+    d.setDate(d.getDate() - 6); // today + the 6 previous days
   } else if (range === 'month') {
     d.setDate(1);
   } else if (range === '3months') {
