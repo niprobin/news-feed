@@ -1,28 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>News Feed</title>
+  <title>Actualités</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
-    <h1>News</h1>
+    <h1>Actualités</h1>
     <div class="controls">
-      <div class="segmented" role="group" aria-label="Date range" id="range">
-        <button data-range="7days">Last 7 days</button>
-        <button data-range="month">This month</button>
-        <button data-range="3months">Last 3 months</button>
+      <div class="segmented" role="group" aria-label="Période" id="range">
+        <button data-range="7days">7 derniers jours</button>
+        <button data-range="month">Ce mois-ci</button>
+        <button data-range="3months">3 derniers mois</button>
       </div>
       <select id="source" class="select" aria-label="Source">
-        <option value="">All sources</option>
+        <option value="">Toutes les sources</option>
       </select>
-      <div class="segmented" role="group" aria-label="View" id="view">
-        <button data-view="grid">Grid</button>
-        <button data-view="list">List</button>
+      <div class="segmented" role="group" aria-label="Affichage" id="view">
+        <button data-view="grid">Grille</button>
+        <button data-view="list">Liste</button>
       </div>
-      <button id="refresh" class="icon-btn" title="Refresh" aria-label="Refresh">↻</button>
+      <button id="refresh" class="icon-btn" title="Actualiser" aria-label="Actualiser">↻</button>
     </div>
   </header>
 

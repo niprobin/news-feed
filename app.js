@@ -51,7 +51,7 @@ function normalize(raw) {
   const { summary, category } = parsePreview(stripHtml(pick(raw, ['preview', 'description', 'summary', 'contentSnippet', 'snippet', 'excerpt', 'content']) || ''));
 
   return {
-    title: String(pick(raw, ['title', 'headline', 'name']) ?? 'Untitled'),
+    title: String(pick(raw, ['title', 'headline', 'name']) ?? 'Sans titre'),
     key: raw.hash ?? raw.id ?? url,
     hash: raw.hash ?? null,
     read: raw.read === true,
@@ -111,16 +111,16 @@ function stripHtml(s) {
 }
 
 async function load() {
-  setStatus('Loading articles…');
+  setStatus('Chargement des articles…');
   $content.innerHTML = '';
   try {
     const res = await fetch(WEBHOOK_URL, { headers: { Accept: 'application/json' } });
-    if (!res.ok) throw new Error(`Request failed (${res.status})`);
+    if (!res.ok) throw new Error(`Échec de la requête (${res.status})`);
     const payload = await res.json();
     const items = extractItems(payload);
     if (!items.length) {
-      const msg = payload && payload.message ? ` Webhook said: “${payload.message}”.` : '';
-      throw new Error(`No articles found in the response.${msg}`);
+      const msg = payload && payload.message ? ` Réponse du webhook : « ${payload.message} ».` : '';
+      throw new Error(`Aucun article trouvé dans la réponse.${msg}`);
     }
     // Articles already read are hidden on load; ones marked during this
     // session stay visible (dimmed) until the next refresh.
@@ -156,8 +156,8 @@ function groupByMonth(articles) {
   return groups;
 }
 
-const monthFmt = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
-const dayFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' });
+const monthFmt = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' });
+const dayFmt = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
 
 // --- Rendering --------------------------------------------------------------
 
@@ -170,7 +170,7 @@ function render() {
 
   $content.innerHTML = '';
   if (!visible.length) {
-    setStatus(`No articles in this period (${state.articles.length} total loaded).`);
+    setStatus(`Aucun article sur cette période (${state.articles.length} chargés au total).`);
     return;
   }
   setStatus(`${visible.length} article${visible.length === 1 ? '' : 's'}`);
@@ -178,7 +178,7 @@ function render() {
   for (const [key, items] of groupByMonth(visible)) {
     const section = document.createElement('section');
     section.className = 'month';
-    const label = key === 'undated' ? 'Undated' : monthFmt.format(items[0].date);
+    const label = key === 'undated' ? 'Sans date' : capitalize(monthFmt.format(items[0].date));
     section.innerHTML = `<h2>${escapeHtml(label)} <span class="count">${items.length}</span></h2>`;
     const wrap = document.createElement('div');
     wrap.className = state.view;
@@ -201,8 +201,8 @@ function card(a) {
       ${meta || a.hash ? `<div class="top-row">
         <div class="meta">${meta}</div>
         ${a.hash ? `<button type="button" class="mark-read" ${a.read
-          ? 'disabled aria-pressed="true" aria-label="Read" title="Read"'
-          : 'aria-pressed="false" aria-label="Mark as read" title="Mark as read"'}>${CHECK_ICON}</button>` : ''}
+          ? 'disabled aria-pressed="true" aria-label="Lu" title="Lu"'
+          : 'aria-pressed="false" aria-label="Marquer comme lu" title="Marquer comme lu"'}>${CHECK_ICON}</button>` : ''}
       </div>` : ''}
       <h3>${a.url ? `<a class="card-link" href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}</h3>
       ${a.description ? `<p>${escapeHtml(a.description)}</p>` : ''}
@@ -224,11 +224,11 @@ async function markRead(a, el) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ hash: a.hash }),
     });
-    if (!res.ok) throw new Error(`Request failed (${res.status})`);
+    if (!res.ok) throw new Error(`Échec de la requête (${res.status})`);
   } catch (err) {
     a.read = false;
     updated.replaceWith(card(a));
-    setStatus(`Couldn't mark “${a.title}” as read: ${err.message}`, true);
+    setStatus(`Impossible de marquer « ${a.title} » comme lu : ${err.message}`, true);
   }
 }
 
@@ -237,7 +237,7 @@ function fillSourceOptions() {
   const $source = document.getElementById('source');
   const sources = [...new Set(state.articles.map((a) => a.source).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   if (state.source && !sources.includes(state.source)) state.source = '';
-  $source.replaceChildren(new Option('All sources', ''), ...sources.map((s) => new Option(s, s)));
+  $source.replaceChildren(new Option('Toutes les sources', ''), ...sources.map((s) => new Option(s, s)));
   $source.value = state.source;
 }
 
@@ -249,6 +249,10 @@ function syncButtons() {
 function setStatus(msg, isError = false) {
   $status.textContent = msg;
   $status.classList.toggle('error', isError);
+}
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function escapeHtml(s) {
